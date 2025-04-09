@@ -6,29 +6,25 @@ import { interventions } from "@/data/interventions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { jsPDF } from "jspdf";
-import { Line } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import { 
   Chart as ChartJS, 
   CategoryScale, 
   LinearScale, 
-  PointElement, 
-  LineElement, 
+  BarElement, 
   Title, 
   Tooltip, 
-  Legend,
-  Filler
+  Legend
 } from 'chart.js';
 
 // Register Chart.js components
 ChartJS.register(
   CategoryScale, 
   LinearScale, 
-  PointElement, 
-  LineElement, 
+  BarElement, 
   Title, 
   Tooltip, 
-  Legend,
-  Filler
+  Legend
 );
 
 interface ResultsPanelProps {
@@ -94,26 +90,19 @@ export default function ResultsPanel({
   const postInterventionRisk = riskProjection.interventionRisk[currentMonth - 1] || riskScore;
   const riskReduction = calculateRiskReduction();
   
-  // Chart data configuration
+  // Chart data configuration for before/after comparison
   const chartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels: ['Without Interventions', 'With Interventions'],
     datasets: [
       {
-        label: 'Base Risk',
-        data: riskProjection.baseRisk,
-        borderColor: '#f44336',
-        backgroundColor: 'rgba(244, 67, 54, 0.1)',
-        tension: 0.3,
-        fill: true
-      },
-      {
-        label: 'With Intervention',
-        data: riskProjection.interventionRisk,
-        borderColor: '#ff9800',
-        backgroundColor: 'rgba(255, 152, 0, 0.1)',
-        tension: 0.3,
-        borderDash: [5, 5],
-        fill: true
+        label: 'Risk Score',
+        data: [
+          riskProjection.baseRisk[0] || riskScore,
+          riskProjection.interventionRisk[0] || riskScore
+        ],
+        backgroundColor: ['rgba(244, 67, 54, 0.6)', 'rgba(255, 152, 0, 0.6)'],
+        borderColor: ['#f44336', '#ff9800'],
+        borderWidth: 1
       }
     ]
   };
@@ -121,18 +110,31 @@ export default function ResultsPanel({
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    indexAxis: 'y' as const, // Horizontal bar chart
     plugins: {
       legend: {
-        position: 'bottom' as const,
+        display: false, // Hide legend since we have labels
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            return `Risk Score: ${context.parsed.x.toFixed(2)}`;
+          }
+        }
       }
     },
     scales: {
-      y: {
+      x: {
         min: 0,
         max: 1,
         title: {
           display: true,
           text: 'Risk Score'
+        }
+      },
+      y: {
+        title: {
+          display: false
         }
       }
     }
@@ -207,11 +209,11 @@ export default function ResultsPanel({
           regionName={selectedRegion?.name || ""} 
         />
         
-        {/* Risk Projection Graph */}
+        {/* Risk Comparison Graph */}
         <div className="mb-6 bg-gray-100 p-4 rounded">
-          <h3 className="font-medium mb-3">Risk Projection (12 months)</h3>
+          <h3 className="font-medium mb-3">Risk Comparison</h3>
           <div style={{ height: "200px" }}>
-            <Line data={chartData} options={chartOptions} />
+            <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
         

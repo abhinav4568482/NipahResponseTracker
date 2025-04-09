@@ -54,7 +54,7 @@ export function calculateRiskScore(
 }
 
 /**
- * Generate risk projection over 12 months
+ * Calculate risk with and without interventions
  */
 export function generateRiskProjection(
   baseRiskScore: number,
@@ -62,54 +62,32 @@ export function generateRiskProjection(
   seasonalEvents: SeasonalEvent[],
   activeInterventions: ActiveIntervention[]
 ): RiskProjection {
-  const baseRisk: number[] = [];
-  const interventionRisk: number[] = [];
+  // Get the current risk score without interventions
+  const currentRiskScore = calculateRiskScore(currentParameters, baseRiskScore);
   
-  // Clone current parameters
-  const baselineParams = { ...currentParameters };
+  // Calculate the risk score with interventions
+  const interventionParams = applyInterventions(currentParameters, activeInterventions);
+  const interventionRiskScore = calculateRiskScore(interventionParams, baseRiskScore);
   
-  // For each month, calculate base risk and intervention risk
-  for (let month = 1; month <= 12; month++) {
-    // Apply seasonal effects for this month
-    const monthParams = applySeasonalEffects(baselineParams, seasonalEvents, month);
-    
-    // Calculate base risk for this month
-    const monthBaseRisk = calculateRiskScore(monthParams, baseRiskScore);
-    baseRisk.push(monthBaseRisk);
-    
-    // Apply interventions active for this month
-    const interventionParams = applyInterventions(monthParams, activeInterventions, month);
-    
-    // Calculate intervention risk for this month
-    const monthInterventionRisk = calculateRiskScore(interventionParams, baseRiskScore);
-    interventionRisk.push(monthInterventionRisk);
-  }
+  // Fill arrays with constant values for simplified display
+  const baseRisk = Array(12).fill(currentRiskScore);
+  const interventionRisk = Array(12).fill(interventionRiskScore);
   
   return { baseRisk, interventionRisk };
 }
 
 /**
  * Apply seasonal effects to parameters for a specific month
+ * Note: Currently not used since temporal simulation has been removed
  */
 function applySeasonalEffects(
   baseParameters: RiskParameters,
-  seasonalEvents: SeasonalEvent[],
-  month: number
+  seasonalEvents: SeasonalEvent[]
 ): RiskParameters {
   // Clone parameters to avoid modifying the original
   const modifiedParams = { ...baseParameters };
   
-  // Apply effects from seasonal events active in this month
-  seasonalEvents.forEach(event => {
-    if (event.months.includes(month)) {
-      const paramKey = event.affects.parameter;
-      const effect = event.affects.effect;
-      
-      // Apply effect
-      modifiedParams[paramKey] = Math.max(0, Math.min(1, modifiedParams[paramKey] + effect));
-    }
-  });
-  
+  // This function is kept for future reference but not currently used
   return modifiedParams;
 }
 
@@ -118,19 +96,22 @@ function applySeasonalEffects(
  */
 function applyInterventions(
   baseParameters: RiskParameters,
-  interventions: ActiveIntervention[],
-  currentMonth: number
+  interventions: ActiveIntervention[]
 ): RiskParameters {
   // Clone parameters to avoid modifying the original
   const modifiedParams = { ...baseParameters };
   
-  // Apply effects from interventions if they were applied in this month or earlier
+  // Apply effects from all active interventions
   interventions.forEach(intervention => {
-    if (intervention.appliedAt <= currentMonth) {
-      const paramKey = intervention.impact.parameter;
-      const effect = intervention.impact.effect;
-      
-      // Apply effect
+    const paramKey = intervention.impact.parameter;
+    const effect = intervention.impact.effect;
+    
+    // Healthcare infrastructure is inverted (higher is better)
+    if (paramKey === 'healthcareInfrastructure') {
+      // For healthcare improvements, positive effect means better infrastructure
+      modifiedParams[paramKey] = Math.max(0, Math.min(1, modifiedParams[paramKey] + Math.abs(effect)));
+    } else {
+      // For all other parameters, interventions should reduce risk (decrease value)
       modifiedParams[paramKey] = Math.max(0, Math.min(1, modifiedParams[paramKey] + effect));
     }
   });

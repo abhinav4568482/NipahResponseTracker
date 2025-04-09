@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import AppHeader from "@/components/AppHeader";
 import ParametersPanel from "@/components/ParametersPanel";
 import MapContainer from "@/components/MapContainer";
-import TimeControlPanel from "@/components/TimeControlPanel";
 import ResultsPanel from "@/components/ResultsPanel";
 import { RiskParameters, Region, ActiveIntervention, RiskProjection } from "@/types";
 import { calculateRiskScore, generateRiskProjection } from "@/lib/riskCalculation";
@@ -12,8 +11,6 @@ import { useRegionData } from "@/context/RegionDataContext";
 
 export default function Dashboard() {
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
-  const [currentMonth, setCurrentMonth] = useState<number>(1);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [riskParameters, setRiskParameters] = useState<RiskParameters>({
     batDensity: 0.5,
     pigFarmingIntensity: 0.5,
@@ -38,7 +35,7 @@ export default function Dashboard() {
       const score = calculateRiskScore(riskParameters);
       setRiskScore(score);
       
-      // Generate risk projection for 12 months
+      // Generate risk projection with and without interventions
       const projection = generateRiskProjection(
         selectedRegion.baseRiskScore,
         riskParameters,
@@ -62,43 +59,20 @@ export default function Dashboard() {
     }));
   };
 
-  // Handle month change
-  const handleMonthChange = (month: number) => {
-    setCurrentMonth(month);
-  };
-
-  // Handle play/pause of temporal simulation
-  const togglePlaySimulation = () => {
-    setIsPlaying(!isPlaying);
-  };
-
   // Handle adding intervention
   const handleAddIntervention = (intervention: ActiveIntervention) => {
-    setActiveInterventions(prev => [...prev, intervention]);
+    // Set a fixed appliedAt value of 1 since we don't use temporal simulation anymore
+    const newIntervention = {
+      ...intervention,
+      appliedAt: 1
+    };
+    setActiveInterventions(prev => [...prev, newIntervention]);
   };
 
   // Handle removing intervention
   const handleRemoveIntervention = (id: string) => {
     setActiveInterventions(prev => prev.filter(i => i.id !== id));
   };
-
-  // Time simulation effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentMonth(prev => {
-          if (prev === 12) return 1;
-          return prev + 1;
-        });
-      }, 1500);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPlaying]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -120,14 +94,6 @@ export default function Dashboard() {
             onRegionSelect={handleRegionSelect}
             riskParameters={riskParameters}
           />
-          
-          <TimeControlPanel 
-            currentMonth={currentMonth}
-            onMonthChange={handleMonthChange}
-            isPlaying={isPlaying}
-            onTogglePlay={togglePlaySimulation}
-            seasonalEvents={seasonalEvents}
-          />
         </div>
         
         <ResultsPanel 
@@ -136,7 +102,7 @@ export default function Dashboard() {
           activeInterventions={activeInterventions}
           onAddIntervention={handleAddIntervention}
           onRemoveIntervention={handleRemoveIntervention}
-          currentMonth={currentMonth}
+          currentMonth={1} // Fixed value since we're not using temporal simulation anymore
           riskProjection={riskProjection}
         />
       </div>
