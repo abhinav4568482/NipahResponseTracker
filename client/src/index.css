@@ -41,6 +41,48 @@
   z-index: 50 !important;
 }
 
+/* Custom map marker styles */
+.custom-marker {
+  position: relative;
+  text-align: center;
+}
+
+.marker-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  background: #c30b82;
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -15px 0 0 -15px;
+}
+
+.marker-pin::after {
+  content: '';
+  width: 24px;
+  height: 24px;
+  margin: 3px 0 0 3px;
+  background: #fff;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.marker-label {
+  position: absolute;
+  top: -30px;
+  font-size: 12px;
+  font-weight: bold;
+  width: 100px;
+  left: -35px;
+  text-align: center;
+  padding: 2px 4px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
 .state-district-select {
   margin-bottom: 1rem;
 }

@@ -1,8 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { Region, RiskParameters } from "@/types";
-import { calculateRiskScore } from "@/lib/riskCalculation";
-import { getColorByRisk } from "@/lib/mapUtils";
 
 interface MapContainerProps {
   regions: Region[];
@@ -18,38 +16,44 @@ export default function MapContainer({
   riskParameters
 }: MapContainerProps) {
   const mapRef = useRef<L.Map | null>(null);
-  const regionLayersRef = useRef<Record<string, L.Polygon>>({});
+  const [marker, setMarker] = useState<L.Marker | null>(null);
 
   // Initialize map on component mount
   useEffect(() => {
     if (!mapRef.current) {
-      // Create map instance
-      mapRef.current = L.map('map').setView([23.6850, 90.3563], 6); // Bangladesh center
+      // Create map instance centered on India
+      mapRef.current = L.map('map').setView([20.5937, 78.9629], 5); 
       
       // Add OSM base layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapRef.current);
-
-      // Add regions to map
-      regions.forEach(region => {
-        const riskScore = calculateRiskScore(riskParameters, region.baseRiskScore);
-        const color = getColorByRisk(riskScore);
+      
+      // Add click handler to map to detect clicks on regions
+      mapRef.current.on('click', (e) => {
+        // Find closest region to the click
+        const { lat, lng } = e.latlng;
         
-        const polygon = L.polygon(region.coordinates, {
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.5,
-          weight: 2
-        }).addTo(mapRef.current!);
+        // Simple algorithm to find closest region by center point
+        // Could be enhanced with more complex polygon containment test
+        let closestRegion: Region | null = null;
+        let minDistance = Number.MAX_VALUE;
         
-        polygon.bindPopup(`<b>${region.name}</b><br>Risk Score: ${riskScore.toFixed(2)}`);
-        
-        polygon.on('click', () => {
-          onRegionSelect(region);
+        regions.forEach(region => {
+          const [regionLat, regionLng] = region.center;
+          // Calculate squared distance (avoiding sqrt for performance)
+          const distance = Math.pow(lat - regionLat, 2) + Math.pow(lng - regionLng, 2);
+          
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestRegion = region;
+          }
         });
         
-        regionLayersRef.current[region.id] = polygon;
+        // Threshold for "close enough" - adjust as needed
+        if (closestRegion && minDistance < 0.01) {
+          onRegionSelect(closestRegion);
+        }
       });
     }
 
@@ -60,72 +64,40 @@ export default function MapContainer({
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [regions, onRegionSelect]);
 
-  // Update map when risk parameters change
-  useEffect(() => {
-    if (mapRef.current) {
-      regions.forEach(region => {
-        const riskScore = calculateRiskScore(riskParameters, region.baseRiskScore);
-        const color = getColorByRisk(riskScore);
-        
-        const polygon = regionLayersRef.current[region.id];
-        if (polygon) {
-          polygon.setStyle({
-            color: color,
-            fillColor: color,
-          });
-          
-          // Update popup content
-          polygon.bindPopup(`<b>${region.name}</b><br>Risk Score: ${riskScore.toFixed(2)}`);
-        }
-      });
-    }
-  }, [riskParameters, regions]);
-
-  // Update selected region highlight
+  // Update marker when selected region changes
   useEffect(() => {
     if (mapRef.current && selectedRegion) {
-      // Reset all region borders and opacities
-      Object.values(regionLayersRef.current).forEach(layer => {
-        const regionId = Object.keys(regionLayersRef.current).find(
-          key => regionLayersRef.current[key] === layer
-        );
-        
-        const region = regions.find(r => r.id === regionId);
-        if (region) {
-          const riskScore = calculateRiskScore(riskParameters, region.baseRiskScore);
-          const color = getColorByRisk(riskScore);
-          
-          layer.setStyle({ 
-            weight: 2,
-            fillOpacity: 0.5,
-            color: color,
-            fillColor: color
-          });
-        }
+      // Remove existing marker if present
+      if (marker) {
+        marker.remove();
+      }
+      
+      // Create a custom icon for the marker
+      const customIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div class="marker-pin"></div>
+               <div class="marker-label">${selectedRegion.name}</div>`,
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -42]
       });
       
-      // Highlight selected region with increased opacity and thicker border
-      const selectedLayer = regionLayersRef.current[selectedRegion.id];
-      if (selectedLayer) {
-        // Calculate risk score for the selected region
-        const riskScore = calculateRiskScore(riskParameters, selectedRegion.baseRiskScore);
-        const color = getColorByRisk(riskScore);
-        
-        // Apply enhanced styling to selected region
-        selectedLayer.setStyle({ 
-          weight: 4,
-          fillOpacity: 0.8,
-          color: '#000',  // Black border for contrast
-          fillColor: color
-        });
-        
-        // Fly to the selected region
-        mapRef.current.flyTo(selectedRegion.center, 8);
-      }
+      // Add marker to the map
+      const newMarker = L.marker(selectedRegion.center, { icon: customIcon })
+        .addTo(mapRef.current);
+      
+      // Set popup content
+      newMarker.bindPopup(`<b>${selectedRegion.name}</b>`);
+      
+      // Save marker reference
+      setMarker(newMarker);
+      
+      // Fly to the selected region
+      mapRef.current.flyTo(selectedRegion.center, 9);
     }
-  }, [selectedRegion, riskParameters, regions]);
+  }, [selectedRegion]);
 
   // Map zoom controls
   const handleZoomIn = () => {
@@ -142,7 +114,7 @@ export default function MapContainer({
 
   const handleResetMap = () => {
     if (mapRef.current) {
-      mapRef.current.setView([23.6850, 90.3563], 6);
+      mapRef.current.setView([20.5937, 78.9629], 5); // Reset to India center
     }
   };
 
@@ -150,26 +122,13 @@ export default function MapContainer({
     <div id="map-container" className="flex-1 relative">
       <div id="map" className="w-full h-full"></div>
       
-      {/* Map Legends */}
-      <div className="absolute bottom-4 left-4 bg-white p-3 rounded shadow-md z-10 text-sm">
-        <h3 className="font-medium mb-2">Risk Level</h3>
-        <div className="flex items-center mb-1">
-          <div className="w-4 h-4 rounded bg-green-500 mr-2"></div>
-          <span>Low (0.0-0.3)</span>
+      {/* Map Info */}
+      {selectedRegion && (
+        <div className="absolute bottom-4 left-4 bg-white p-3 rounded shadow-md z-10 text-sm">
+          <h3 className="font-medium mb-1">Selected Region</h3>
+          <p className="text-gray-700">{selectedRegion.name}</p>
         </div>
-        <div className="flex items-center mb-1">
-          <div className="w-4 h-4 rounded bg-orange-500 mr-2"></div>
-          <span>Medium (0.3-0.6)</span>
-        </div>
-        <div className="flex items-center mb-1">
-          <div className="w-4 h-4 rounded bg-red-500 mr-2"></div>
-          <span>High (0.6-0.8)</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 rounded bg-red-900 mr-2"></div>
-          <span>Critical (0.8-1.0)</span>
-        </div>
-      </div>
+      )}
 
       {/* Map Controls */}
       <div className="absolute top-4 right-4 bg-white rounded shadow-md z-10 flex">
@@ -183,6 +142,8 @@ export default function MapContainer({
           <i className="ri-refresh-line"></i>
         </button>
       </div>
+
+      {/* Add global CSS in index.css instead */}
     </div>
   );
 }
