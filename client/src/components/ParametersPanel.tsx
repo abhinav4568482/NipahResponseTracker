@@ -3,10 +3,13 @@ import { RiskParameters, Region } from "@/types";
 import ParameterSlider from "./ParameterSlider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Settings, MapPin } from "lucide-react";
+import { Settings, MapPin, Save, FileUp, FileDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useRegionData, RegionParametersData } from "@/context/RegionDataContext";
+import { indianStates, districtsByState } from "@/data/statesDistricts";
+import { useToast } from "@/hooks/use-toast";
 
 // Parameter weights interface
 interface RiskParameterWeight {
@@ -17,54 +20,6 @@ interface RiskParameterWeight {
   healthcareInfrastructure: number;
   environmentalDegradation: number;
 }
-
-// Interface for custom region data
-interface CustomRegionData {
-  state: string;
-  district: string;
-  parameters: RiskParameters;
-}
-
-// Indian states and districts
-const indianStates = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", 
-  "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", 
-  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", 
-  "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
-  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
-];
-
-// District map - organized by state
-const districtsByState: {[key: string]: string[]} = {
-  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Tirupati", "Guntur", "Nellore", "Kurnool", "Kakinada", "Anantapur", "Kadapa", "Eluru", "Ongole"],
-  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang", "Bomdila", "Ziro", "Tezu", "Roing", "Yingkiong", "Aalo"],
-  "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Tezpur", "Nagaon", "Bongaigaon", "Tinsukia", "Goalpara", "Karimganj", "Dhubri"],
-  "Bihar": ["Patna", "Gaya", "Muzaffarpur", "Bhagalpur", "Darbhanga", "Arrah", "Begusarai", "Chhapra", "Katihar", "Purnia", "Samastipur"],
-  "Chhattisgarh": ["Raipur", "Bilaspur", "Bhilai", "Korba", "Durg", "Rajnandgaon", "Raigarh", "Jagdalpur", "Ambikapur", "Dhamtari"],
-  "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda", "Curchorem", "Canacona", "Bicholim", "Pernem", "Quepem"],
-  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar", "Junagadh", "Anand", "Bharuch", "Patan"],
-  "Haryana": ["Faridabad", "Gurgaon", "Panipat", "Ambala", "Hisar", "Karnal", "Rohtak", "Sonipat", "Yamunanagar", "Panchkula"],
-  "Himachal Pradesh": ["Shimla", "Mandi", "Dharamshala", "Solan", "Kullu", "Hamirpur", "Nahan", "Chamba", "Bilaspur", "Una"],
-  "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh", "Deoghar", "Giridih", "Ramgarh", "Phusro", "Medininagar"],
-  "Karnataka": ["Bengaluru", "Mysuru", "Mangaluru", "Belagavi", "Kalaburagi", "Hubballi", "Shivamogga", "Tumakuru", "Davanagere", "Ballari", "Vijayapura"],
-  "Kerala": ["Kozhikode", "Malappuram", "Kannur", "Wayanad", "Thrissur", "Palakkad", "Ernakulam", "Idukki", "Thiruvananthapuram", "Kollam", "Kottayam"],
-  "Madhya Pradesh": ["Bhopal", "Indore", "Jabalpur", "Gwalior", "Ujjain", "Sagar", "Dewas", "Satna", "Rewa", "Ratlam", "Singrauli"],
-  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad", "Solapur", "Kolhapur", "Amravati", "Nanded", "Sangli"],
-  "Manipur": ["Imphal", "Thoubal", "Bishnupur", "Senapati", "Ukhrul", "Chandel", "Churachandpur", "Tamenglong", "Jiribam", "Kangpokpi"],
-  "Meghalaya": ["Shillong", "Tura", "Jowai", "Nongstoin", "Williamnagar", "Baghmara", "Resubelpara", "Khliehriat", "Mawkyrwat", "Ampati"],
-  "Mizoram": ["Aizawl", "Lunglei", "Champhai", "Kolasib", "Serchhip", "Siaha", "Lawngtlai", "Mamit", "Khawzawl", "Saitual"],
-  "Nagaland": ["Kohima", "Dimapur", "Mokokchung", "Tuensang", "Wokha", "Zunheboto", "Phek", "Mon", "Peren", "Kiphire"],
-  "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Brahmapur", "Sambalpur", "Puri", "Balasore", "Bhadrak", "Baripada", "Jeypore", "Jharsuguda"],
-  "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda", "Hoshiarpur", "Mohali", "Batala", "Pathankot", "Moga"],
-  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner", "Ajmer", "Bharatpur", "Sikar", "Alwar", "Bhilwara"],
-  "Sikkim": ["Gangtok", "Namchi", "Gyalshing", "Mangan", "Rangpo", "Singtam", "Jorethang", "Nayabazar", "Chungthang", "Ravangla"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirapalli", "Tirunelveli", "Erode", "Tiruppur", "Vellore", "Thanjavur", "Dindigul"],
-  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam", "Ramagundam", "Mahbubnagar", "Nalgonda", "Adilabad", "Suryapet", "Siddipet"],
-  "Tripura": ["Agartala", "Udaipur", "Dharmanagar", "Kailashahar", "Belonia", "Khowai", "Ambassa", "Sonamura", "Sabroom", "Santirbazar"],
-  "Uttar Pradesh": ["Lucknow", "Kanpur", "Ghaziabad", "Agra", "Varanasi", "Meerut", "Prayagraj", "Aligarh", "Bareilly", "Moradabad", "Saharanpur"],
-  "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Rudrapur", "Kashipur", "Rishikesh", "Pithoragarh", "Ramnagar", "Khatima"],
-  "West Bengal": ["Kolkata", "Siliguri", "Howrah", "Darjeeling", "Jalpaiguri", "Cooch Behar", "Alipurduar", "Durgapur", "Asansol", "Kharagpur", "Malda"]
-};
 
 interface ParametersPanelProps {
   parameters: RiskParameters;
@@ -96,32 +51,21 @@ export default function ParametersPanel({
     environmentalDegradation: 0.10
   });
   
-  // Load saved parameters from localStorage if available
+  // Access RegionData context
+  const { regionData, updateRegionParameters, getRegionParameters, exportData, importData } = useRegionData();
+  const { toast } = useToast();
+  
+  // Load parameters from RegionData context when state/district selection changes
   useEffect(() => {
-    // Load stored locations and parameters
-    const savedData = localStorage.getItem('normsCustomData');
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData) as CustomRegionData[];
-        // If a location is already selected, try to load its saved parameters
-        if (selectedState && selectedDistrict) {
-          const savedRegion = parsedData.find(
-            item => item.state === selectedState && item.district === selectedDistrict
-          );
-          
-          if (savedRegion) {
-            // Update the parameters
-            Object.keys(savedRegion.parameters).forEach(key => {
-              const paramKey = key as keyof RiskParameters;
-              onParameterChange(paramKey, savedRegion.parameters[paramKey]);
-            });
-          }
-        }
-      } catch (e) {
-        console.error("Error loading saved parameters:", e);
-      }
+    if (selectedState && selectedDistrict) {
+      const params = getRegionParameters(selectedState, selectedDistrict);
+      // Update all parameters from the context
+      Object.keys(params).forEach(key => {
+        const paramKey = key as keyof RiskParameters;
+        onParameterChange(paramKey, params[paramKey]);
+      });
     }
-  }, [selectedState, selectedDistrict, onParameterChange]);
+  }, [selectedState, selectedDistrict, getRegionParameters, onParameterChange]);
   
   // Update available districts when state selection changes
   useEffect(() => {
@@ -305,6 +249,82 @@ export default function ParametersPanel({
           weight={0.10}
         />
 
+        {/* Save Data Button */}
+        <Button 
+          variant="default" 
+          className="w-full bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded transition mb-4 flex items-center justify-center"
+          onClick={() => {
+            if (selectedState && selectedDistrict) {
+              updateRegionParameters(selectedState, selectedDistrict, parameters);
+              toast({
+                title: "Parameters Saved",
+                description: `Saved parameters for ${selectedDistrict}, ${selectedState}`,
+              });
+            } else {
+              toast({
+                title: "Error",
+                description: "Please select a state and district first",
+                variant: "destructive",
+              });
+            }
+          }}
+        >
+          <Save className="mr-2 h-4 w-4" /> Save Parameters
+        </Button>
+        
+        {/* Data Import/Export */}
+        <div className="flex gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            className="flex-1 bg-neutral-light hover:bg-neutral-medium py-2 px-4 rounded transition flex items-center justify-center"
+            onClick={() => {
+              exportData();
+              toast({
+                title: "Data Exported",
+                description: "Parameter data has been exported to a file",
+              });
+            }}
+          >
+            <FileDown className="mr-2 h-4 w-4" /> Export
+          </Button>
+          
+          <label 
+            htmlFor="import-data"
+            className="flex-1 flex items-center justify-center py-2 px-4 bg-neutral-light hover:bg-neutral-medium rounded cursor-pointer transition"
+          >
+            <FileUp className="mr-2 h-4 w-4" /> Import
+            <input
+              id="import-data"
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    try {
+                      const jsonData = JSON.parse(event.target?.result as string) as RegionParametersData[];
+                      importData(jsonData);
+                      toast({
+                        title: "Data Imported",
+                        description: "Parameter data has been imported successfully",
+                      });
+                    } catch (error) {
+                      toast({
+                        title: "Import Error",
+                        description: "Failed to parse the imported file",
+                        variant: "destructive",
+                      });
+                    }
+                  };
+                  reader.readAsText(file);
+                }
+              }}
+            />
+          </label>
+        </div>
+        
         {/* Advanced Settings Button */}
         <Dialog>
           <DialogTrigger asChild>

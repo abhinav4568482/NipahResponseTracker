@@ -8,18 +8,19 @@ import { RiskParameters, Region, ActiveIntervention, RiskProjection } from "@/ty
 import { calculateRiskScore, generateRiskProjection } from "@/lib/riskCalculation";
 import { regions } from "@/data/regions";
 import { seasonalEvents } from "@/data/seasonalEvents";
+import { useRegionData } from "@/context/RegionDataContext";
 
 export default function Dashboard() {
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [currentMonth, setCurrentMonth] = useState<number>(1);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [riskParameters, setRiskParameters] = useState<RiskParameters>({
-    batDensity: 0.6,
-    pigFarmingIntensity: 0.4,
-    fruitConsumptionPractices: 0.7,
+    batDensity: 0.5,
+    pigFarmingIntensity: 0.5,
+    fruitConsumptionPractices: 0.5,
     humanPopulationDensity: 0.5,
     healthcareInfrastructure: 0.5,
-    environmentalDegradation: 0.3
+    environmentalDegradation: 0.5
   });
   const [riskScore, setRiskScore] = useState<number>(0);
   const [activeInterventions, setActiveInterventions] = useState<ActiveIntervention[]>([]);
@@ -27,6 +28,9 @@ export default function Dashboard() {
     baseRisk: [],
     interventionRisk: []
   });
+  
+  // Access region data context
+  const { getRegionParameters } = useRegionData();
 
   // Calculate risk score whenever parameters or region changes
   useEffect(() => {
