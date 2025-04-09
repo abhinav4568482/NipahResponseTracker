@@ -1,0 +1,254 @@
+🧾 Project Title
+Nipah Outbreak Risk Mapping & Response Simulator (NORMS)
+A Deterministic Spatial-Temporal Modeling Web Application for Early Epidemic Risk Estimation and Intervention Planning
+
+📌 Problem Statement
+The Nipah virus is a high-fatality zoonotic disease with a history of outbreaks in South and Southeast Asia. Despite its severity, early detection and outbreak preparedness at the district or state level remain underdeveloped due to lack of tools that incorporate ecological and healthcare factors.
+
+Local authorities and healthcare workers need a semi-dynamic, interpretable system to estimate outbreak risk based on real-world parameters like bat host presence, pig-human interaction, fruit contamination, and healthcare accessibility. This project aims to address this gap by building a non-AI-based deterministic epidemic risk simulation and mapping tool.
+
+🎯 Objective
+To develop a web-based decision support system that:
+
+Maps and quantifies Nipah virus outbreak risk across regions using deterministic modeling.
+
+Simulates temporal changes in risk due to seasonal or ecological shifts.
+
+Enables scenario testing with public health interventions.
+
+Generates risk reports for policy planners and response teams.
+
+🔍 Key Features
+Interactive Risk Mapping
+
+Map-based region selection (using Leaflet.js or Mapbox)
+
+Dynamic color-coded choropleth based on real-time calculated risk scores
+
+Multi-Parameter Risk Estimation Engine
+
+Inputs: Bat density, pig-human proximity, fruit exposure index, healthcare infrastructure score, urban-wildlife interface
+
+Normalized and weighted risk formula
+
+𝑅
+=
+(
+𝑤
+1
+×
+𝐵
+)
++
+(
+𝑤
+2
+×
+𝑃
+)
++
+(
+𝑤
+3
+×
+𝐹
+)
++
+(
+𝑤
+4
+×
+𝐻
+)
++
+(
+𝑤
+5
+×
+𝑈
+)
+R=(w 
+1
+​
+ ×B)+(w 
+2
+​
+ ×P)+(w 
+3
+​
+ ×F)+(w 
+4
+​
+ ×H)+(w 
+5
+​
+ ×U)
+Temporal Risk Simulation
+
+12-month simulation slider
+
+Event-based parameter fluctuations (e.g., monsoon, date palm season, bat migration)
+
+Animated map + graph visualization of evolving risk
+
+Intervention Scenario Module
+
+Simulate impact of interventions:
+
+Fruit netting
+
+Pig culling/quarantine
+
+Health camp setup
+
+Awareness campaigns
+
+Side-by-side risk comparison before vs. after interventions
+
+Custom Data Editor + Region Manager
+
+Upload/edit regional ecological and healthcare data
+
+Save modified sessions or export as JSON/CSV
+
+PDF/HTML Report Generator
+
+Risk summary per region
+
+Graphs of temporal changes
+
+Intervention impacts
+
+Recommendations for public health response
+
+🧱 System Architecture Overview
+Frontend: React.js / HTML-CSS-JS with Leaflet.js for maps, Plotly/Chart.js for visualization
+
+Backend (Optional): Flask or Node.js for score computation, PDF generation, and data management
+
+Data Layer: Static JSON or CSV-based ecological/health data per district/state
+
+Report Module: jsPDF or WeasyPrint for generating downloadable reports
+
+⚙️ User Workflow
+Select a region from map or dropdown.
+
+View pre-filled ecological and health indicators.
+
+Adjust input parameters as needed (manual override).
+
+View calculated risk score and visualization.
+
+Run temporal simulation with seasonal/ecological events.
+
+Add one or more intervention scenarios.
+
+Compare pre/post-intervention risk levels.
+
+Export the entire report as a PDF.
+
+📊 Example Risk Calculation (Sample Formula)
+𝑅
+𝑖
+𝑠
+𝑘
+=
+(
+0.3
+×
+𝐵
+𝑎
+𝑡
+𝐷
+𝑒
+𝑛
+𝑠
+𝑖
+𝑡
+𝑦
+)
++
+(
+0.2
+×
+𝑃
+𝑖
+𝑔
+𝐷
+𝑒
+𝑛
+𝑠
+𝑖
+𝑡
+𝑦
+)
++
+(
+0.2
+×
+𝐹
+𝑟
+𝑢
+𝑖
+𝑡
+𝐸
+𝑥
+𝑝
+𝑜
+𝑠
+𝑢
+𝑟
+𝑒
+)
++
+(
+0.2
+×
+𝐼
+𝑛
+𝑣
+𝑒
+𝑟
+𝑠
+𝑒
+𝐻
+𝑒
+𝑎
+𝑙
+𝑡
+ℎ
+𝑐
+𝑎
+𝑟
+𝑒
+)
++
+(
+0.1
+×
+𝑈
+𝑟
+𝑏
+𝑎
+𝑛
+𝑊
+𝑖
+𝑙
+𝑑
+𝑂
+𝑣
+𝑒
+𝑟
+𝑙
+𝑎
+𝑝
+)
+Risk=(0.3×BatDensity)+(0.2×PigDensity)+(0.2×FruitExposure)+(0.2×InverseHealthcare)+(0.1×UrbanWildOverlap)
+Each parameter is normalized between 0 and 1. The weights are user-configurable to allow contextual tuning.
+
+🧪 Outcome
+A usable web application that models Nipah outbreak risk realistically using static and simulated data.
+
+A tool for scenario planning without reliance on AI or machine learning.
+
+Strong integration of data visualization, geographic information systems (GIS), epidemiology, and deterministic modeling.
