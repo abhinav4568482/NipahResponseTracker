@@ -7,7 +7,7 @@ export const seasonalEvents: SeasonalEvent[] = [
     months: [1, 2],
     icon: 'ri-calendar-event-line',
     affects: {
-      parameter: 'fruitExposure',
+      parameter: 'fruitConsumptionPractices',
       effect: 0.2
     }
   },
@@ -29,6 +29,26 @@ export const seasonalEvents: SeasonalEvent[] = [
     affects: {
       parameter: 'batDensity',
       effect: 0.25
+    }
+  },
+  {
+    id: 'harvest-festival',
+    name: 'November: Harvest Festival',
+    months: [11],
+    icon: 'ri-plant-line',
+    affects: {
+      parameter: 'humanPopulationDensity',
+      effect: 0.1
+    }
+  },
+  {
+    id: 'deforestation-season',
+    name: 'March-April: Deforestation Activity',
+    months: [3, 4],
+    icon: 'ri-scissors-cut-line',
+    affects: {
+      parameter: 'environmentalDegradation',
+      effect: 0.15
     }
   }
 ];

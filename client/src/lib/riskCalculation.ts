@@ -2,11 +2,12 @@ import { RiskParameters, SeasonalEvent, ActiveIntervention, RiskParameterWeight,
 
 // Default weights for risk parameters
 const DEFAULT_WEIGHTS: RiskParameterWeight = {
-  batDensity: 0.3,
-  pigDensity: 0.2,
-  fruitExposure: 0.2,
-  inverseHealthcare: 0.2,
-  urbanWildOverlap: 0.1
+  batDensity: 0.25,
+  pigFarmingIntensity: 0.20,
+  fruitConsumptionPractices: 0.15,
+  humanPopulationDensity: 0.15,
+  healthcareInfrastructure: 0.15,
+  environmentalDegradation: 0.10
 };
 
 /**
@@ -30,7 +31,7 @@ export function calculateRiskScore(
     const value = parameters[paramKey];
     
     // For healthcare, which is inverted (higher value = lower risk)
-    if (paramKey === 'inverseHealthcare') {
+    if (paramKey === 'healthcareInfrastructure') {
       totalScore += weight * (1 - value);
     } else {
       totalScore += weight * value;

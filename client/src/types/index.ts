@@ -7,19 +7,21 @@ export interface Region {
 }
 
 export interface RiskParameters {
-  batDensity: number;
-  pigDensity: number;
-  fruitExposure: number;
-  inverseHealthcare: number;
-  urbanWildOverlap: number;
+  batDensity: number;               // B: Higher populations of Pteropus bats
+  pigFarmingIntensity: number;      // P: Proximity to pig farms
+  fruitConsumptionPractices: number; // F: Consumption of raw date palm sap or contaminated fruits
+  humanPopulationDensity: number;   // H: Densely populated areas
+  healthcareInfrastructure: number; // C: Limited access to healthcare (inverted: higher value = lower risk)
+  environmentalDegradation: number; // E: Deforestation and habitat fragmentation
 }
 
 export interface RiskParameterWeight {
   batDensity: number;
-  pigDensity: number;
-  fruitExposure: number;
-  inverseHealthcare: number;
-  urbanWildOverlap: number;
+  pigFarmingIntensity: number;
+  fruitConsumptionPractices: number;
+  humanPopulationDensity: number;
+  healthcareInfrastructure: number;
+  environmentalDegradation: number;
 }
 
 export interface SeasonalEvent {

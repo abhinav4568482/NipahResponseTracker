@@ -6,19 +6,21 @@ import {
 } from "@shared/schema";
 
 export interface RiskParameters {
-  batDensity: number;
-  pigDensity: number;
-  fruitExposure: number;
-  inverseHealthcare: number;
-  urbanWildOverlap: number;
+  batDensity: number;               // B: Higher populations of Pteropus bats
+  pigFarmingIntensity: number;      // P: Proximity to pig farms
+  fruitConsumptionPractices: number; // F: Consumption of raw date palm sap or contaminated fruits
+  humanPopulationDensity: number;   // H: Densely populated areas
+  healthcareInfrastructure: number; // C: Limited access to healthcare (inverted: higher value = lower risk)
+  environmentalDegradation: number; // E: Deforestation and habitat fragmentation
 }
 
 export interface RiskParameterWeight {
   batDensity: number;
-  pigDensity: number;
-  fruitExposure: number;
-  inverseHealthcare: number;
-  urbanWildOverlap: number;
+  pigFarmingIntensity: number;
+  fruitConsumptionPractices: number;
+  humanPopulationDensity: number;
+  healthcareInfrastructure: number;
+  environmentalDegradation: number;
 }
 
 export interface IStorage {
@@ -125,7 +127,13 @@ export class MemStorage implements IStorage {
   
   async createParameterSet(insertParameterSet: InsertParameterSet): Promise<ParameterSet> {
     const id = this.parameterSetIdCounter++;
-    const parameterSet: ParameterSet = { ...insertParameterSet, id };
+    // Ensure userId is never undefined
+    const userId = insertParameterSet.userId ?? null;
+    const parameterSet: ParameterSet = { 
+      ...insertParameterSet, 
+      id,
+      userId 
+    };
     this.parameterSets.set(id, parameterSet);
     return parameterSet;
   }
@@ -143,7 +151,13 @@ export class MemStorage implements IStorage {
   
   async createScenario(insertScenario: InsertScenario): Promise<Scenario> {
     const id = this.scenarioIdCounter++;
-    const scenario: Scenario = { ...insertScenario, id };
+    // Ensure userId is never undefined
+    const userId = insertScenario.userId ?? null;
+    const scenario: Scenario = { 
+      ...insertScenario, 
+      id,
+      userId
+    };
     this.scenarios.set(id, scenario);
     return scenario;
   }
@@ -153,11 +167,12 @@ export class MemStorage implements IStorage {
     parameters: RiskParameters, 
     baseScore?: number, 
     weights: RiskParameterWeight = {
-      batDensity: 0.3,
-      pigDensity: 0.2,
-      fruitExposure: 0.2,
-      inverseHealthcare: 0.2,
-      urbanWildOverlap: 0.1
+      batDensity: 0.25,
+      pigFarmingIntensity: 0.20,
+      fruitConsumptionPractices: 0.15,
+      humanPopulationDensity: 0.15,
+      healthcareInfrastructure: 0.15,
+      environmentalDegradation: 0.10
     }
   ): Promise<number> {
     let totalScore = 0;
@@ -169,7 +184,7 @@ export class MemStorage implements IStorage {
       const value = parameters[paramKey];
       
       // For healthcare, which is inverted (higher value = lower risk)
-      if (paramKey === 'inverseHealthcare') {
+      if (paramKey === 'healthcareInfrastructure') {
         totalScore += weight * (1 - value);
       } else {
         totalScore += weight * value;
@@ -196,7 +211,7 @@ export class MemStorage implements IStorage {
     const sampleRegions: InsertRegion[] = [
       { 
         name: 'West Bengal',
-        identifier: 'region1',
+        identifier: 'wb',
         center: [23.0, 87.0],
         baseRiskScore: 0.72,
         coordinates: [
@@ -205,7 +220,7 @@ export class MemStorage implements IStorage {
       },
       { 
         name: 'Kerala',
-        identifier: 'region2',
+        identifier: 'kl',
         center: [10.8505, 76.2711],
         baseRiskScore: 0.65,
         coordinates: [
@@ -213,21 +228,93 @@ export class MemStorage implements IStorage {
         ]
       },
       { 
-        name: 'Bangladesh (Rangpur)',
-        identifier: 'region3',
-        center: [25.7439, 89.2752],
-        baseRiskScore: 0.81,
+        name: 'Siliguri (West Bengal)',
+        identifier: 'wb-siliguri',
+        center: [26.7271, 88.3953],
+        baseRiskScore: 0.78,
         coordinates: [
-          [25.3, 88.8], [25.3, 89.7], [26.2, 89.7], [26.2, 88.8]
+          [26.6, 88.3], [26.6, 88.5], [26.8, 88.5], [26.8, 88.3]
         ]
       },
       { 
-        name: 'Malaysia (Perak)',
-        identifier: 'region4',
-        center: [4.7711, 101.0449],
+        name: 'Kozhikode (Kerala)',
+        identifier: 'kl-kozhikode',
+        center: [11.2588, 75.7804],
+        baseRiskScore: 0.69,
+        coordinates: [
+          [11.2, 75.7], [11.2, 75.9], [11.3, 75.9], [11.3, 75.7]
+        ]
+      },
+      { 
+        name: 'Tamil Nadu',
+        identifier: 'tn',
+        center: [11.1271, 78.6569],
+        baseRiskScore: 0.51,
+        coordinates: [
+          [10.8, 78.3], [10.8, 79.0], [11.5, 79.0], [11.5, 78.3]
+        ]
+      },
+      { 
+        name: 'Andhra Pradesh',
+        identifier: 'ap',
+        center: [15.9129, 79.7400],
+        baseRiskScore: 0.48,
+        coordinates: [
+          [15.5, 79.3], [15.5, 80.1], [16.3, 80.1], [16.3, 79.3]
+        ]
+      },
+      { 
+        name: 'Karnataka',
+        identifier: 'ka',
+        center: [15.3173, 75.7139],
+        baseRiskScore: 0.56,
+        coordinates: [
+          [15.0, 75.4], [15.0, 76.0], [15.6, 76.0], [15.6, 75.4]
+        ]
+      },
+      { 
+        name: 'Maharashtra',
+        identifier: 'mh',
+        center: [19.7515, 75.7139],
+        baseRiskScore: 0.54,
+        coordinates: [
+          [19.4, 75.4], [19.4, 76.0], [20.1, 76.0], [20.1, 75.4]
+        ]
+      },
+      { 
+        name: 'Assam',
+        identifier: 'as',
+        center: [26.2006, 92.9376],
+        baseRiskScore: 0.63,
+        coordinates: [
+          [25.9, 92.6], [25.9, 93.3], [26.5, 93.3], [26.5, 92.6]
+        ]
+      },
+      { 
+        name: 'Odisha',
+        identifier: 'od',
+        center: [20.9517, 85.0985],
+        baseRiskScore: 0.57,
+        coordinates: [
+          [20.6, 84.8], [20.6, 85.4], [21.3, 85.4], [21.3, 84.8]
+        ]
+      },
+      { 
+        name: 'Telangana',
+        identifier: 'tl',
+        center: [17.1231, 79.0128],
         baseRiskScore: 0.45,
         coordinates: [
-          [4.3, 100.6], [4.3, 101.4], [5.2, 101.4], [5.2, 100.6]
+          [16.8, 78.7], [16.8, 79.3], [17.4, 79.3], [17.4, 78.7]
+        ]
+      },
+      { 
+        name: 'Gujarat',
+        identifier: 'gj',
+        center: [22.2587, 71.1924],
+        baseRiskScore: 0.43,
+        coordinates: [
+          [21.9, 70.9], [21.9, 71.5], [22.6, 71.5], [22.6, 70.9]
         ]
       }
     ];

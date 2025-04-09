@@ -112,18 +112,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const schema = z.object({
         parameters: z.object({
           batDensity: z.number().min(0).max(1),
-          pigDensity: z.number().min(0).max(1),
-          fruitExposure: z.number().min(0).max(1),
-          inverseHealthcare: z.number().min(0).max(1),
-          urbanWildOverlap: z.number().min(0).max(1)
+          pigFarmingIntensity: z.number().min(0).max(1),
+          fruitConsumptionPractices: z.number().min(0).max(1),
+          humanPopulationDensity: z.number().min(0).max(1),
+          healthcareInfrastructure: z.number().min(0).max(1),
+          environmentalDegradation: z.number().min(0).max(1)
         }),
         baseRiskScore: z.number().min(0).max(1).optional(),
         weights: z.object({
           batDensity: z.number(),
-          pigDensity: z.number(),
-          fruitExposure: z.number(),
-          inverseHealthcare: z.number(),
-          urbanWildOverlap: z.number()
+          pigFarmingIntensity: z.number(),
+          fruitConsumptionPractices: z.number(),
+          humanPopulationDensity: z.number(),
+          healthcareInfrastructure: z.number(),
+          environmentalDegradation: z.number()
         }).optional()
       });
 

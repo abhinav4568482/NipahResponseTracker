@@ -15,10 +15,11 @@ export default function Dashboard() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [riskParameters, setRiskParameters] = useState<RiskParameters>({
     batDensity: 0.6,
-    pigDensity: 0.4,
-    fruitExposure: 0.7,
-    inverseHealthcare: 0.5,
-    urbanWildOverlap: 0.3
+    pigFarmingIntensity: 0.4,
+    fruitConsumptionPractices: 0.7,
+    humanPopulationDensity: 0.5,
+    healthcareInfrastructure: 0.5,
+    environmentalDegradation: 0.3
   });
   const [riskScore, setRiskScore] = useState<number>(0);
   const [activeInterventions, setActiveInterventions] = useState<ActiveIntervention[]>([]);

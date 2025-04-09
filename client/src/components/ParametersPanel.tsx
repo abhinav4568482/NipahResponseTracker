@@ -72,43 +72,51 @@ export default function ParametersPanel({
         {/* Parameter Sliders */}
         <ParameterSlider 
           name="bat-density"
-          label="Bat Density"
+          label="Bat Density (B)"
           value={parameters.batDensity}
           onChange={(value) => onParameterChange('batDensity', value)}
-          weight={0.3}
+          weight={0.25}
         />
         
         <ParameterSlider 
-          name="pig-density"
-          label="Pig Density"
-          value={parameters.pigDensity}
-          onChange={(value) => onParameterChange('pigDensity', value)}
-          weight={0.2}
+          name="pig-farming"
+          label="Pig Farming Intensity (P)"
+          value={parameters.pigFarmingIntensity}
+          onChange={(value) => onParameterChange('pigFarmingIntensity', value)}
+          weight={0.20}
         />
         
         <ParameterSlider 
-          name="fruit-exposure"
-          label="Fruit Exposure"
-          value={parameters.fruitExposure}
-          onChange={(value) => onParameterChange('fruitExposure', value)}
-          weight={0.2}
+          name="fruit-consumption"
+          label="Fruit Consumption Practices (F)"
+          value={parameters.fruitConsumptionPractices}
+          onChange={(value) => onParameterChange('fruitConsumptionPractices', value)}
+          weight={0.15}
+        />
+        
+        <ParameterSlider 
+          name="human-population"
+          label="Human Population Density (H)"
+          value={parameters.humanPopulationDensity}
+          onChange={(value) => onParameterChange('humanPopulationDensity', value)}
+          weight={0.15}
         />
         
         <ParameterSlider 
           name="healthcare"
-          label="Healthcare Index"
-          value={parameters.inverseHealthcare}
-          onChange={(value) => onParameterChange('inverseHealthcare', value)}
-          weight={0.2}
+          label="Healthcare Infrastructure (C)"
+          value={parameters.healthcareInfrastructure}
+          onChange={(value) => onParameterChange('healthcareInfrastructure', value)}
+          weight={0.15}
           inverted={true}
         />
         
         <ParameterSlider 
-          name="urban-wildlife"
-          label="Urban-Wildlife Interface"
-          value={parameters.urbanWildOverlap}
-          onChange={(value) => onParameterChange('urbanWildOverlap', value)}
-          weight={0.1}
+          name="environment"
+          label="Environmental Degradation (E)"
+          value={parameters.environmentalDegradation}
+          onChange={(value) => onParameterChange('environmentalDegradation', value)}
+          weight={0.10}
         />
 
         {/* Advanced Settings Button */}
