@@ -83,6 +83,103 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+/* Interactive popup styles */
+.interactive-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.interactive-popup .leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  width: 100% !important;
+}
+
+.interactive-popup .marker-popup {
+  padding: 12px;
+}
+
+.marker-popup .risk-score-container {
+  margin-top: 10px;
+}
+
+.marker-popup .mt-2 {
+  margin-top: 8px;
+}
+
+.marker-popup .mt-3 {
+  margin-top: 12px;
+}
+
+.marker-popup .pt-2 {
+  padding-top: 8px;
+}
+
+.marker-popup .border-t {
+  border-top: 1px solid #e5e7eb;
+}
+
+.marker-popup .grid {
+  display: grid;
+}
+
+.marker-popup .grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.marker-popup .gap-1 {
+  gap: 4px;
+}
+
+.marker-popup .text-lg {
+  font-size: 18px;
+}
+
+.marker-popup .text-sm {
+  font-size: 14px;
+}
+
+.marker-popup .font-bold {
+  font-weight: 700;
+}
+
+.marker-popup .font-medium {
+  font-weight: 500;
+}
+
+.marker-popup .text-right {
+  text-align: right;
+}
+
+.marker-popup .flex {
+  display: flex;
+}
+
+.marker-popup .items-center {
+  align-items: center;
+}
+
+.marker-popup .w-full {
+  width: 100%;
+}
+
+.marker-popup .rounded-full {
+  border-radius: 9999px;
+}
+
+.marker-popup .h-2\.5 {
+  height: 10px;
+}
+
+.marker-popup .mr-2 {
+  margin-right: 8px;
+}
+
+.marker-popup .bg-gray-200 {
+  background-color: #e5e7eb;
+}
+
 .state-district-select {
   margin-bottom: 1rem;
 }

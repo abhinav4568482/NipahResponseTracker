@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { Region, RiskParameters } from "@/types";
 import { stateCoordinates, districtCoordinates } from "@/data/statesDistricts";
+import { calculateRiskScore } from "@/lib/riskCalculation";
+import { getColorByRisk } from "@/lib/mapUtils";
 
 interface MapContainerProps {
   regions: Region[];
@@ -124,8 +126,52 @@ export default function MapContainer({
       const newMarker = L.marker(coords, { icon: customIcon })
         .addTo(mapRef.current);
       
+      // Calculate risk score for the selected region
+      const riskScore = calculateRiskScore(riskParameters, selectedRegion.baseRiskScore);
+      const riskColor = getColorByRisk(riskScore);
+      
+      // Create detailed HTML popup with risk information
+      const popupContent = `
+        <div class="marker-popup">
+          <h3 class="text-lg font-bold">${selectedRegion.name}</h3>
+          <div class="risk-score-container mt-2">
+            <div class="font-medium">Risk Score:</div>
+            <div class="flex items-center">
+              <div class="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                <div class="h-2.5 rounded-full" style="width: ${riskScore * 100}%; background-color: ${riskColor};"></div>
+              </div>
+              <span class="text-sm font-bold">${(riskScore * 100).toFixed(1)}%</span>
+            </div>
+          </div>
+          <div class="mt-3 pt-2 border-t">
+            <div class="grid grid-cols-2 gap-1">
+              <div class="text-sm">Bat Density:</div>
+              <div class="text-sm font-medium text-right">${(riskParameters.batDensity * 100).toFixed(0)}%</div>
+              
+              <div class="text-sm">Pig Farming:</div>
+              <div class="text-sm font-medium text-right">${(riskParameters.pigFarmingIntensity * 100).toFixed(0)}%</div>
+              
+              <div class="text-sm">Raw Fruit Consumption:</div>
+              <div class="text-sm font-medium text-right">${(riskParameters.fruitConsumptionPractices * 100).toFixed(0)}%</div>
+              
+              <div class="text-sm">Population Density:</div>
+              <div class="text-sm font-medium text-right">${(riskParameters.humanPopulationDensity * 100).toFixed(0)}%</div>
+              
+              <div class="text-sm">Healthcare Access:</div>
+              <div class="text-sm font-medium text-right">${(riskParameters.healthcareInfrastructure * 100).toFixed(0)}%</div>
+              
+              <div class="text-sm">Environmental Degradation:</div>
+              <div class="text-sm font-medium text-right">${(riskParameters.environmentalDegradation * 100).toFixed(0)}%</div>
+            </div>
+          </div>
+        </div>
+      `;
+      
       // Set popup content
-      newMarker.bindPopup(`<b>${selectedRegion.name}</b>`);
+      newMarker.bindPopup(popupContent, {
+        maxWidth: 300,
+        className: 'interactive-popup'
+      });
       
       // Save marker reference
       setMarker(newMarker);
