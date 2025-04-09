@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { Region, RiskParameters } from "@/types";
+import { stateCoordinates, districtCoordinates } from "@/data/statesDistricts";
 
 interface MapContainerProps {
   regions: Region[];
@@ -74,6 +75,41 @@ export default function MapContainer({
         marker.remove();
       }
       
+      // Extract state and district from name if possible
+      const nameParts = selectedRegion.name.match(/(.+?)(?:\s*\((.+)\))?$/);
+      let districtName = nameParts ? nameParts[1].trim() : null;
+      let stateName = nameParts && nameParts[2] ? nameParts[2].trim() : null;
+      
+      // If not in format "District (State)", try to determine another way
+      if (!stateName) {
+        // Look through state names to see if any are in the region name
+        for (const state of Object.keys(stateCoordinates)) {
+          if (selectedRegion.name.includes(state)) {
+            stateName = state;
+            // The remaining text might be the district
+            districtName = selectedRegion.name.replace(state, '').trim();
+            break;
+          }
+        }
+      }
+      
+      // Get coordinates - preferring more accurate ones if available
+      let coords = selectedRegion.center;
+      let zoomLevel = 8; // Default zoom level
+      
+      // If we have a state and district, use district coordinates if available
+      if (stateName && districtName && 
+          districtCoordinates[stateName] && 
+          districtCoordinates[stateName][districtName]) {
+        coords = districtCoordinates[stateName][districtName];
+        zoomLevel = 10; // Closer zoom for districts
+      } 
+      // If only state is identified, use state coordinates
+      else if (stateName && stateCoordinates[stateName]) {
+        coords = stateCoordinates[stateName];
+        zoomLevel = 7; // Wider zoom for states
+      }
+      
       // Create a custom icon for the marker
       const customIcon = L.divIcon({
         className: 'custom-marker',
@@ -85,7 +121,7 @@ export default function MapContainer({
       });
       
       // Add marker to the map
-      const newMarker = L.marker(selectedRegion.center, { icon: customIcon })
+      const newMarker = L.marker(coords, { icon: customIcon })
         .addTo(mapRef.current);
       
       // Set popup content
@@ -94,8 +130,8 @@ export default function MapContainer({
       // Save marker reference
       setMarker(newMarker);
       
-      // Fly to the selected region
-      mapRef.current.flyTo(selectedRegion.center, 9);
+      // Fly to the selected coordinates with appropriate zoom
+      mapRef.current.flyTo(coords, zoomLevel);
     }
   }, [selectedRegion]);
 

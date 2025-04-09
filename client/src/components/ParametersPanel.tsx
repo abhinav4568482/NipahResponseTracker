@@ -8,7 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useRegionData, RegionParametersData } from "@/context/RegionDataContext";
-import { indianStates, districtsByState } from "@/data/statesDistricts";
+import { 
+  indianStates, 
+  districtsByState, 
+  stateCoordinates, 
+  districtCoordinates 
+} from "@/data/statesDistricts";
 import { useToast } from "@/hooks/use-toast";
 
 // Parameter weights interface
