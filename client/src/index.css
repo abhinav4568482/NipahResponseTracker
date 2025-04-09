@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom styles */
+.dialog-content {
+  z-index: 100 !important;
+}
+
+.state-district-select {
+  margin-bottom: 1rem;
+}
+
+.parameter-input-group {
+  margin-bottom: 1rem;
+}
+
+.parameter-input-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.parameter-input-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.25rem;
+}
+
 @layer base {
   * {
     @apply border-border;
