@@ -55,9 +55,12 @@ export default function ParametersPanel({
   const { regionData, updateRegionParameters, getRegionParameters, exportData, importData } = useRegionData();
   const { toast } = useToast();
   
-  // Load parameters from RegionData context when state/district selection changes
+  // Load parameters from RegionData context ONLY when state/district INITIAL selection changes
   useEffect(() => {
-    if (selectedState && selectedDistrict) {
+    // Create a flag to track if this is an initial load or a re-selection
+    const isInitialSelection = selectedState && selectedDistrict;
+    
+    if (isInitialSelection) {
       const params = getRegionParameters(selectedState, selectedDistrict);
       // Update all parameters from the context
       Object.keys(params).forEach(key => {
@@ -65,7 +68,8 @@ export default function ParametersPanel({
         onParameterChange(paramKey, params[paramKey]);
       });
     }
-  }, [selectedState, selectedDistrict, getRegionParameters, onParameterChange]);
+    // This effect runs only when the selection changes, not on every slider adjustment
+  }, [selectedState, selectedDistrict]);
   
   // Update available districts when state selection changes
   useEffect(() => {
