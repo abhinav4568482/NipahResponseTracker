@@ -86,19 +86,46 @@ export default function MapContainer({
   // Update selected region highlight
   useEffect(() => {
     if (mapRef.current && selectedRegion) {
-      // Reset all region borders
+      // Reset all region borders and opacities
       Object.values(regionLayersRef.current).forEach(layer => {
-        layer.setStyle({ weight: 2 });
+        const regionId = Object.keys(regionLayersRef.current).find(
+          key => regionLayersRef.current[key] === layer
+        );
+        
+        const region = regions.find(r => r.id === regionId);
+        if (region) {
+          const riskScore = calculateRiskScore(riskParameters, region.baseRiskScore);
+          const color = getColorByRisk(riskScore);
+          
+          layer.setStyle({ 
+            weight: 2,
+            fillOpacity: 0.5,
+            color: color,
+            fillColor: color
+          });
+        }
       });
       
-      // Highlight selected region
+      // Highlight selected region with increased opacity and thicker border
       const selectedLayer = regionLayersRef.current[selectedRegion.id];
       if (selectedLayer) {
-        selectedLayer.setStyle({ weight: 4 });
+        // Calculate risk score for the selected region
+        const riskScore = calculateRiskScore(riskParameters, selectedRegion.baseRiskScore);
+        const color = getColorByRisk(riskScore);
+        
+        // Apply enhanced styling to selected region
+        selectedLayer.setStyle({ 
+          weight: 4,
+          fillOpacity: 0.8,
+          color: '#000',  // Black border for contrast
+          fillColor: color
+        });
+        
+        // Fly to the selected region
         mapRef.current.flyTo(selectedRegion.center, 8);
       }
     }
-  }, [selectedRegion]);
+  }, [selectedRegion, riskParameters, regions]);
 
   // Map zoom controls
   const handleZoomIn = () => {
