@@ -3,8 +3,42 @@
 @tailwind utilities;
 
 /* Custom styles */
-.dialog-content {
-  z-index: 100 !important;
+/* Fix z-index issues with map and dialogs */
+.leaflet-pane {
+  z-index: 1 !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 1 !important;
+}
+
+.leaflet-overlay-pane {
+  z-index: 2 !important;
+}
+
+.leaflet-shadow-pane {
+  z-index: 3 !important;
+}
+
+.leaflet-marker-pane {
+  z-index: 4 !important;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 5 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 6 !important;
+}
+
+.leaflet-control {
+  z-index: 8 !important;
+}
+
+/* Dialog should be above everything else */
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
 }
 
 .state-district-select {

@@ -129,7 +129,7 @@ export default function ParametersPanel({
               <Settings className="mr-2 h-4 w-4" /> Advanced Settings
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="dialog-content">
             <DialogHeader>
               <DialogTitle>Advanced Settings</DialogTitle>
             </DialogHeader>
