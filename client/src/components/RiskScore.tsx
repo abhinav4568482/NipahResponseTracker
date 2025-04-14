@@ -7,15 +7,14 @@ interface RiskScoreProps {
 
 export default function RiskScore({ score, regionName }: RiskScoreProps) {
   const riskCategory = useMemo(() => {
-    if (score >= 0.8) return { label: "CRITICAL RISK", color: "bg-red-900 text-red-900" };
-    if (score >= 0.6) return { label: "HIGH RISK", color: "bg-red-500 text-red-500" };
-    if (score >= 0.3) return { label: "MEDIUM RISK", color: "bg-orange-500 text-orange-500" };
+    if (score > 0.55) return { label: "HIGH RISK", color: "bg-red-500 text-red-500" };
+    if (score >= 0.45) return { label: "MEDIUM RISK", color: "bg-orange-500 text-orange-500" };
     return { label: "LOW RISK", color: "bg-green-500 text-green-500" };
   }, [score]);
 
   const recommendationText = useMemo(() => {
-    if (score >= 0.6) return "Intervention recommended";
-    if (score >= 0.3) return "Monitor situation closely";
+    if (score > 0.55) return "Immediate intervention required";
+    if (score >= 0.45) return "Monitor situation closely";
     return "Continue routine surveillance";
   }, [score]);
 

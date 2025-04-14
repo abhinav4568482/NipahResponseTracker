@@ -3,8 +3,8 @@ import AppHeader from "@/components/AppHeader";
 import ParametersPanel from "@/components/ParametersPanel";
 import MapContainer from "@/components/MapContainer";
 import ResultsPanel from "@/components/ResultsPanel";
-import { RiskParameters, Region, ActiveIntervention, RiskProjection } from "@/types";
-import { calculateRiskScore, generateRiskProjection } from "@/lib/riskCalculation";
+import { RiskParameters, Region, ActiveIntervention, RiskProjection, RiskParameterWeight } from "@/types";
+import { calculateRiskScore, generateRiskProjection, DEFAULT_WEIGHTS } from "@/lib/riskCalculation";
 import { regions } from "@/data/regions";
 import { seasonalEvents } from "@/data/seasonalEvents";
 import { useRegionData } from "@/context/RegionDataContext";
@@ -25,6 +25,7 @@ export default function Dashboard() {
     baseRisk: [],
     interventionRisk: []
   });
+  const [parameterWeights, setParameterWeights] = useState<RiskParameterWeight>(DEFAULT_WEIGHTS);
   
   // Access region data context
   const { getRegionParameters } = useRegionData();
@@ -32,7 +33,7 @@ export default function Dashboard() {
   // Calculate risk score whenever parameters or region changes
   useEffect(() => {
     if (selectedRegion) {
-      const score = calculateRiskScore(riskParameters);
+      const score = calculateRiskScore(riskParameters, selectedRegion.baseRiskScore, parameterWeights);
       setRiskScore(score);
       
       // Generate risk projection with and without interventions
@@ -44,7 +45,7 @@ export default function Dashboard() {
       );
       setRiskProjection(projection);
     }
-  }, [riskParameters, selectedRegion, activeInterventions]);
+  }, [riskParameters, selectedRegion, activeInterventions, parameterWeights]);
 
   // Handle region selection
   const handleRegionSelect = (region: Region) => {
@@ -59,6 +60,11 @@ export default function Dashboard() {
     }));
   };
 
+  // Handle weight changes from ParametersPanel
+  const handleWeightChange = (weights: RiskParameterWeight) => {
+    setParameterWeights(weights);
+  };
+
   // Handle adding intervention
   const handleAddIntervention = (intervention: ActiveIntervention) => {
     // Set a fixed appliedAt value of 1 since we don't use temporal simulation anymore
@@ -66,7 +72,16 @@ export default function Dashboard() {
       ...intervention,
       appliedAt: 1
     };
-    setActiveInterventions(prev => [...prev, newIntervention]);
+    
+    setActiveInterventions(prev => {
+      // If this is the first intervention, we need to ensure we're starting from the base parameters
+      if (prev.length === 0) {
+        // Reset parameters to their current base values before applying first intervention
+        const baseParams = { ...riskParameters };
+        setRiskParameters(baseParams);
+      }
+      return [...prev, newIntervention];
+    });
   };
 
   // Handle removing intervention
@@ -85,6 +100,8 @@ export default function Dashboard() {
           selectedRegion={selectedRegion}
           onRegionSelect={handleRegionSelect}
           regions={regions}
+          onWeightChange={handleWeightChange}
+          parameterWeights={parameterWeights}
         />
         
         <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -102,7 +119,7 @@ export default function Dashboard() {
           activeInterventions={activeInterventions}
           onAddIntervention={handleAddIntervention}
           onRemoveIntervention={handleRemoveIntervention}
-          currentMonth={1} // Fixed value since we're not using temporal simulation anymore
+          currentMonth={1} // MONTH NOT IMPLEMENTED YET
           riskProjection={riskProjection}
         />
       </div>

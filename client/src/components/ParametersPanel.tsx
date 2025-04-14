@@ -15,6 +15,7 @@ import {
   districtCoordinates 
 } from "@/data/statesDistricts";
 import { useToast } from "@/hooks/use-toast";
+import { DEFAULT_WEIGHTS } from "@/lib/riskCalculation";
 
 // Parameter weights interface
 interface RiskParameterWeight {
@@ -32,6 +33,8 @@ interface ParametersPanelProps {
   selectedRegion: Region | null;
   onRegionSelect: (region: Region) => void;
   regions: Region[];
+  onWeightChange: (weights: RiskParameterWeight) => void;
+  parameterWeights: RiskParameterWeight;
 }
 
 export default function ParametersPanel({
@@ -39,22 +42,14 @@ export default function ParametersPanel({
   onParameterChange,
   selectedRegion,
   onRegionSelect,
-  regions
+  regions,
+  onWeightChange,
+  parameterWeights
 }: ParametersPanelProps) {
   const [isMobileVisible, setIsMobileVisible] = useState(false);
   const [selectedState, setSelectedState] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
-  
-  // Parameter weights for advanced settings
-  const [parameterWeights, setParameterWeights] = useState<RiskParameterWeight>({
-    batDensity: 0.25,
-    pigFarmingIntensity: 0.20,
-    fruitConsumptionPractices: 0.15,
-    humanPopulationDensity: 0.15,
-    healthcareInfrastructure: 0.15,
-    environmentalDegradation: 0.10
-  });
   
   // Access RegionData context
   const { regionData, updateRegionParameters, getRegionParameters, exportData, importData } = useRegionData();
@@ -126,10 +121,11 @@ export default function ParametersPanel({
   const handleWeightChange = (param: keyof RiskParameterWeight, value: string) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 1) {
-      setParameterWeights(prev => ({
-        ...prev,
+      const newWeights = {
+        ...parameterWeights,
         [param]: numValue
-      }));
+      };
+      onWeightChange(newWeights);
     }
   };
   
@@ -137,8 +133,45 @@ export default function ParametersPanel({
   const applyWeightChanges = () => {
     // Store weights in localStorage
     localStorage.setItem('normsWeights', JSON.stringify(parameterWeights));
-    // TODO: Update global weights in risk calculation
+    // Notify parent component of weight changes
+    onWeightChange(parameterWeights);
     alert("Parameter weights saved successfully!");
+  };
+
+  // Function to handle file import
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          if (data.regionData && Array.isArray(data.regionData)) {
+            importData(data.regionData);
+            if (data.parameterWeights) {
+              onWeightChange(data.parameterWeights);
+            }
+            toast({
+              title: "Data imported successfully",
+              description: "Region data and weights have been updated",
+            });
+          } else {
+            toast({
+              title: "Invalid data format",
+              description: "The imported file does not contain valid region data",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          toast({
+            title: "Import failed",
+            description: "Could not parse the imported file",
+            variant: "destructive",
+          });
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   return (
@@ -157,6 +190,35 @@ export default function ParametersPanel({
       </div>
       
       <div className="overflow-y-auto flex-1 p-4">
+        {/* Import/Export Buttons */}
+        <div className="flex space-x-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportData}
+            className="flex items-center space-x-2"
+          >
+            <FileDown className="h-4 w-4" />
+            <span>Export</span>
+          </Button>
+          <input
+            type="file"
+            accept=".json"
+            onChange={handleFileImport}
+            className="hidden"
+            id="file-import"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => document.getElementById('file-import')?.click()}
+            className="flex items-center space-x-2"
+          >
+            <FileUp className="h-4 w-4" />
+            <span>Import</span>
+          </Button>
+        </div>
+
         {/* Region Selection */}
         <div className="mb-6 bg-neutral-light p-4 rounded">
           <h3 className="font-medium mb-2">Region Selection</h3>
@@ -214,7 +276,7 @@ export default function ParametersPanel({
           label="Bat Density (B)"
           value={parameters.batDensity}
           onChange={(value) => onParameterChange('batDensity', value)}
-          weight={0.25}
+          weight={parameterWeights.batDensity}
         />
         
         <ParameterSlider 
@@ -222,7 +284,7 @@ export default function ParametersPanel({
           label="Pig Farming Intensity (P)"
           value={parameters.pigFarmingIntensity}
           onChange={(value) => onParameterChange('pigFarmingIntensity', value)}
-          weight={0.20}
+          weight={parameterWeights.pigFarmingIntensity}
         />
         
         <ParameterSlider 
@@ -230,7 +292,7 @@ export default function ParametersPanel({
           label="Fruit Consumption Practices (F)"
           value={parameters.fruitConsumptionPractices}
           onChange={(value) => onParameterChange('fruitConsumptionPractices', value)}
-          weight={0.15}
+          weight={parameterWeights.fruitConsumptionPractices}
         />
         
         <ParameterSlider 
@@ -238,7 +300,7 @@ export default function ParametersPanel({
           label="Human Population Density (H)"
           value={parameters.humanPopulationDensity}
           onChange={(value) => onParameterChange('humanPopulationDensity', value)}
-          weight={0.15}
+          weight={parameterWeights.humanPopulationDensity}
         />
         
         <ParameterSlider 
@@ -246,7 +308,7 @@ export default function ParametersPanel({
           label="Healthcare Infrastructure (C)"
           value={parameters.healthcareInfrastructure}
           onChange={(value) => onParameterChange('healthcareInfrastructure', value)}
-          weight={0.15}
+          weight={parameterWeights.healthcareInfrastructure}
           inverted={true}
         />
         
@@ -255,7 +317,7 @@ export default function ParametersPanel({
           label="Environmental Degradation (E)"
           value={parameters.environmentalDegradation}
           onChange={(value) => onParameterChange('environmentalDegradation', value)}
-          weight={0.10}
+          weight={parameterWeights.environmentalDegradation}
         />
 
         {/* Save Data Button */}
@@ -280,59 +342,6 @@ export default function ParametersPanel({
         >
           <Save className="mr-2 h-4 w-4" /> Save Parameters
         </Button>
-        
-        {/* Data Import/Export */}
-        <div className="flex gap-2 mb-4">
-          <Button 
-            variant="outline" 
-            className="flex-1 bg-neutral-light hover:bg-neutral-medium py-2 px-4 rounded transition flex items-center justify-center"
-            onClick={() => {
-              exportData();
-              toast({
-                title: "Data Exported",
-                description: "Parameter data has been exported to a file",
-              });
-            }}
-          >
-            <FileDown className="mr-2 h-4 w-4" /> Export
-          </Button>
-          
-          <label 
-            htmlFor="import-data"
-            className="flex-1 flex items-center justify-center py-2 px-4 bg-neutral-light hover:bg-neutral-medium rounded cursor-pointer transition"
-          >
-            <FileUp className="mr-2 h-4 w-4" /> Import
-            <input
-              id="import-data"
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (event) => {
-                    try {
-                      const jsonData = JSON.parse(event.target?.result as string) as RegionParametersData[];
-                      importData(jsonData);
-                      toast({
-                        title: "Data Imported",
-                        description: "Parameter data has been imported successfully",
-                      });
-                    } catch (error) {
-                      toast({
-                        title: "Import Error",
-                        description: "Failed to parse the imported file",
-                        variant: "destructive",
-                      });
-                    }
-                  };
-                  reader.readAsText(file);
-                }
-              }}
-            />
-          </label>
-        </div>
         
         {/* Advanced Settings Button */}
         <Dialog>

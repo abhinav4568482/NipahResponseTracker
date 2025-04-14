@@ -78,106 +78,55 @@ export default function MapContainer({
       }
       
       // Extract state and district from name if possible
-      const nameParts = selectedRegion.name.match(/(.+?)(?:\s*\((.+)\))?$/);
-      let districtName = nameParts ? nameParts[1].trim() : null;
-      let stateName = nameParts && nameParts[2] ? nameParts[2].trim() : null;
+      let districtName = null;
+      let stateName = null;
       
-      // If not in format "District (State)", try to determine another way
-      if (!stateName) {
-        // Look through state names to see if any are in the region name
-        for (const state of Object.keys(stateCoordinates)) {
-          if (selectedRegion.name.includes(state)) {
-            stateName = state;
-            // The remaining text might be the district
-            districtName = selectedRegion.name.replace(state, '').trim();
-            break;
-          }
-        }
+      // First try to match "District (State)" format
+      const nameParts = selectedRegion.name.match(/(.+?)(?:\s*\((.+)\))?$/);
+      if (nameParts && nameParts[2]) {
+        districtName = nameParts[1].trim();
+        stateName = nameParts[2].trim();
+      } else {
+        // If not in "District (State)" format, check if it's a state name
+        // Find exact match in state names
+        stateName = Object.keys(stateCoordinates).find(
+          state => state.toLowerCase() === selectedRegion.name.toLowerCase()
+        ) || null;
       }
       
-      // Get coordinates - preferring more accurate ones if available
-      let coords = selectedRegion.center;
+      // Get coordinates and set zoom level based on selection
+      let coords: [number, number] | null = null;
       let zoomLevel = 8; // Default zoom level
       
-      // If we have a state and district, use district coordinates if available
-      if (stateName && districtName && 
-          districtCoordinates[stateName] && 
-          districtCoordinates[stateName][districtName]) {
-        coords = districtCoordinates[stateName][districtName];
-        zoomLevel = 10; // Closer zoom for districts
+      // If we have both state and district, try to use district coordinates
+      if (stateName && districtName) {
+        // Find exact match in district names for the state
+        const districtKey = Object.keys(districtCoordinates[stateName] || {}).find(
+          d => d.toLowerCase() === districtName.toLowerCase()
+        );
+        
+        if (districtKey && districtCoordinates[stateName][districtKey]) {
+          coords = districtCoordinates[stateName][districtKey];
+          zoomLevel = 12; // Close zoom for district view
+        } else {
+          // If no district coordinates, use state coordinates with closer zoom
+          coords = stateCoordinates[stateName];
+          zoomLevel = 10; // Medium zoom for state view
+        }
       } 
-      // If only state is identified, use state coordinates
+      // If only state is selected, use state coordinates
       else if (stateName && stateCoordinates[stateName]) {
         coords = stateCoordinates[stateName];
-        zoomLevel = 7; // Wider zoom for states
+        zoomLevel = 7; // Wider zoom for state view
       }
       
-      // Create a custom icon for the marker
-      const customIcon = L.divIcon({
-        className: 'custom-marker',
-        html: `<div class="marker-pin"></div>
-               <div class="marker-label">${selectedRegion.name}</div>`,
-        iconSize: [30, 42],
-        iconAnchor: [15, 42],
-        popupAnchor: [0, -42]
-      });
-      
-      // Add marker to the map
-      const newMarker = L.marker(coords, { icon: customIcon })
-        .addTo(mapRef.current);
-      
-      // Calculate risk score for the selected region
-      const riskScore = calculateRiskScore(riskParameters, selectedRegion.baseRiskScore);
-      const riskColor = getColorByRisk(riskScore);
-      
-      // Create detailed HTML popup with risk information
-      const popupContent = `
-        <div class="marker-popup">
-          <h3 class="text-lg font-bold">${selectedRegion.name}</h3>
-          <div class="risk-score-container mt-2">
-            <div class="font-medium">Risk Score:</div>
-            <div class="flex items-center">
-              <div class="w-full bg-gray-200 rounded-full h-2.5 mr-2">
-                <div class="h-2.5 rounded-full" style="width: ${riskScore * 100}%; background-color: ${riskColor};"></div>
-              </div>
-              <span class="text-sm font-bold">${(riskScore * 100).toFixed(1)}%</span>
-            </div>
-          </div>
-          <div class="mt-3 pt-2 border-t">
-            <div class="grid grid-cols-2 gap-1">
-              <div class="text-sm">Bat Density:</div>
-              <div class="text-sm font-medium text-right">${(riskParameters.batDensity * 100).toFixed(0)}%</div>
-              
-              <div class="text-sm">Pig Farming:</div>
-              <div class="text-sm font-medium text-right">${(riskParameters.pigFarmingIntensity * 100).toFixed(0)}%</div>
-              
-              <div class="text-sm">Raw Fruit Consumption:</div>
-              <div class="text-sm font-medium text-right">${(riskParameters.fruitConsumptionPractices * 100).toFixed(0)}%</div>
-              
-              <div class="text-sm">Population Density:</div>
-              <div class="text-sm font-medium text-right">${(riskParameters.humanPopulationDensity * 100).toFixed(0)}%</div>
-              
-              <div class="text-sm">Healthcare Access:</div>
-              <div class="text-sm font-medium text-right">${(riskParameters.healthcareInfrastructure * 100).toFixed(0)}%</div>
-              
-              <div class="text-sm">Environmental Degradation:</div>
-              <div class="text-sm font-medium text-right">${(riskParameters.environmentalDegradation * 100).toFixed(0)}%</div>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      // Set popup content
-      newMarker.bindPopup(popupContent, {
-        maxWidth: 300,
-        className: 'interactive-popup'
-      });
-      
-      // Save marker reference
-      setMarker(newMarker);
-      
-      // Fly to the selected coordinates with appropriate zoom
-      mapRef.current.flyTo(coords, zoomLevel);
+      // Fly to the coordinates with smooth animation
+      if (coords) {
+        mapRef.current.flyTo(coords, zoomLevel, {
+          duration: 1.5,
+          easeLinearity: 0.25
+        });
+      }
     }
   }, [selectedRegion]);
 
@@ -200,6 +149,176 @@ export default function MapContainer({
     }
   };
 
+  const handleCenterMap = () => {
+    if (mapRef.current && selectedRegion) {
+      // Extract state and district from name if possible
+      let districtName = null;
+      let stateName = null;
+      
+      // First try to match "District (State)" format
+      const nameParts = selectedRegion.name.match(/(.+?)(?:\s*\((.+)\))?$/);
+      if (nameParts && nameParts[2]) {
+        districtName = nameParts[1].trim();
+        stateName = nameParts[2].trim();
+      } else {
+        // If not in "District (State)" format, check if it's a state name
+        // Find exact match in state names
+        stateName = Object.keys(stateCoordinates).find(
+          state => state.toLowerCase() === selectedRegion.name.toLowerCase()
+        ) || null;
+      }
+      
+      // Get coordinates and set zoom level based on selection
+      let coords: [number, number] | null = null;
+      let zoomLevel = 8; // Default zoom level
+      
+      // If we have both state and district, try to use district coordinates
+      if (stateName && districtName) {
+        // Find exact match in district names for the state
+        const districtKey = Object.keys(districtCoordinates[stateName] || {}).find(
+          d => d.toLowerCase() === districtName.toLowerCase()
+        );
+        
+        if (districtKey && districtCoordinates[stateName][districtKey]) {
+          coords = districtCoordinates[stateName][districtKey];
+          zoomLevel = 12; // Close zoom for district view
+        } else {
+          // If no district coordinates, use state coordinates with closer zoom
+          coords = stateCoordinates[stateName];
+          zoomLevel = 10; // Medium zoom for state view
+        }
+      } 
+      // If only state is selected, use state coordinates
+      else if (stateName && stateCoordinates[stateName]) {
+        coords = stateCoordinates[stateName];
+        zoomLevel = 7; // Wider zoom for state view
+      }
+      
+      // Fly to the coordinates with smooth animation
+      if (coords) {
+        mapRef.current.flyTo(coords, zoomLevel, {
+          duration: 1.5,
+          easeLinearity: 0.25
+        });
+      }
+    }
+  };
+
+  // Update marker when selected region changes
+  useEffect(() => {
+    if (mapRef.current && selectedRegion) {
+      // Remove existing marker if present
+      if (marker) {
+        marker.remove();
+      }
+      
+      // Extract state and district from name if possible
+      let districtName = null;
+      let stateName = null;
+      
+      // First try to match "District (State)" format
+      const nameParts = selectedRegion.name.match(/(.+?)(?:\s*\((.+)\))?$/);
+      if (nameParts && nameParts[2]) {
+        districtName = nameParts[1].trim();
+        stateName = nameParts[2].trim();
+      } else {
+        // If not in "District (State)" format, check if it's a state name
+        // Find exact match in state names
+        stateName = Object.keys(stateCoordinates).find(
+          state => state.toLowerCase() === selectedRegion.name.toLowerCase()
+        ) || null;
+      }
+      
+      // Get coordinates - preferring more accurate ones if available
+      let coords: [number, number] | null = null;
+      
+      // If we have a state and district, use district coordinates if available
+      if (stateName && districtName) {
+        // Find exact match in district names for the state
+        const districtKey = Object.keys(districtCoordinates[stateName] || {}).find(
+          d => d.toLowerCase() === districtName.toLowerCase()
+        );
+        
+        if (districtKey && districtCoordinates[stateName][districtKey]) {
+          coords = districtCoordinates[stateName][districtKey];
+        } else {
+          // If no district coordinates, use state coordinates
+          coords = stateCoordinates[stateName];
+        }
+      } 
+      // If only state is identified, use state coordinates
+      else if (stateName && stateCoordinates[stateName]) {
+        coords = stateCoordinates[stateName];
+      }
+      
+      if (coords) {
+        // Create a custom icon for the marker
+        const customIcon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div class="marker-pin"></div>
+                 <div class="marker-label">${selectedRegion.name}</div>`,
+          iconSize: [30, 42],
+          iconAnchor: [15, 42],
+          popupAnchor: [0, -42]
+        });
+        
+        // Add marker to the map
+        const newMarker = L.marker(coords, { icon: customIcon })
+          .addTo(mapRef.current);
+        
+        // Calculate risk score for the selected region
+        const riskScore = calculateRiskScore(riskParameters, selectedRegion.baseRiskScore);
+        const riskColor = getColorByRisk(riskScore);
+        
+        // Create detailed HTML popup with risk information
+        const popupContent = `
+          <div class="marker-popup">
+            <h3 class="text-lg font-bold">${selectedRegion.name}</h3>
+            <div class="risk-score-container mt-2">
+              <div class="font-medium">Risk Score:</div>
+              <div class="flex items-center">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                  <div class="h-2.5 rounded-full" style="width: ${riskScore * 100}%; background-color: ${riskColor};"></div>
+                </div>
+                <span class="text-sm font-bold">${(riskScore * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+            <div class="mt-3 pt-2 border-t">
+              <div class="grid grid-cols-2 gap-1">
+                <div class="text-sm">Bat Density:</div>
+                <div class="text-sm font-medium text-right">${(riskParameters.batDensity * 100).toFixed(0)}%</div>
+                
+                <div class="text-sm">Pig Farming:</div>
+                <div class="text-sm font-medium text-right">${(riskParameters.pigFarmingIntensity * 100).toFixed(0)}%</div>
+                
+                <div class="text-sm">Raw Fruit Consumption:</div>
+                <div class="text-sm font-medium text-right">${(riskParameters.fruitConsumptionPractices * 100).toFixed(0)}%</div>
+                
+                <div class="text-sm">Population Density:</div>
+                <div class="text-sm font-medium text-right">${(riskParameters.humanPopulationDensity * 100).toFixed(0)}%</div>
+                
+                <div class="text-sm">Healthcare Access:</div>
+                <div class="text-sm font-medium text-right">${(riskParameters.healthcareInfrastructure * 100).toFixed(0)}%</div>
+                
+                <div class="text-sm">Environmental Degradation:</div>
+                <div class="text-sm font-medium text-right">${(riskParameters.environmentalDegradation * 100).toFixed(0)}%</div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Set popup content
+        newMarker.bindPopup(popupContent, {
+          maxWidth: 300,
+          className: 'interactive-popup'
+        });
+        
+        // Save marker reference
+        setMarker(newMarker);
+      }
+    }
+  }, [selectedRegion, riskParameters]);
+
   return (
     <div id="map-container" className="flex-1 relative">
       <div id="map" className="w-full h-full"></div>
@@ -209,6 +328,13 @@ export default function MapContainer({
         <div className="absolute bottom-4 left-4 bg-white p-3 rounded shadow-md z-10 text-sm">
           <h3 className="font-medium mb-1">Selected Region</h3>
           <p className="text-gray-700">{selectedRegion.name}</p>
+          <button 
+            className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm flex items-center justify-center gap-2"
+            onClick={handleCenterMap}
+          >
+            <i className="ri-focus-3-line"></i>
+            Center Map
+          </button>
         </div>
       )}
 

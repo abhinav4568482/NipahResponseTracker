@@ -160,9 +160,8 @@ export default function ResultsPanel({
     
     // Risk classification
     let riskCategory = "Low";
-    if (riskScore >= 0.8) riskCategory = "Critical";
-    else if (riskScore >= 0.6) riskCategory = "High";
-    else if (riskScore >= 0.3) riskCategory = "Medium";
+    if (riskScore > 0.55) riskCategory = "High";
+    else if (riskScore >= 0.45) riskCategory = "Medium";
     
     doc.text(`Risk Classification: ${riskCategory}`, 20, 50);
     

@@ -1,21 +1,17 @@
 import { RiskParameters, SeasonalEvent, ActiveIntervention, RiskParameterWeight, RiskProjection } from "@/types";
 
-// Default weights for risk parameters
-const DEFAULT_WEIGHTS: RiskParameterWeight = {
-  batDensity: 0.25,
-  pigFarmingIntensity: 0.20,
-  fruitConsumptionPractices: 0.15,
-  humanPopulationDensity: 0.15,
-  healthcareInfrastructure: 0.15,
-  environmentalDegradation: 0.10
+// Default weights for risk parameters - Nipah virus specific
+export const DEFAULT_WEIGHTS: RiskParameterWeight = {
+  batDensity: 0.30,              // Primary reservoir
+  fruitConsumptionPractices: 0.25, // Major transmission route
+  pigFarmingIntensity: 0.15,     // Important amplifying host
+  healthcareInfrastructure: 0.15, // Critical for human-to-human transmission
+  humanPopulationDensity: 0.10,  // Less critical than specific practices
+  environmentalDegradation: 0.05  // Secondary factor
 };
 
 /**
  * Calculate risk score based on parameters and weights
- * @param parameters Risk parameters
- * @param baseScore Optional base risk score to influence calculation
- * @param weights Optional custom weights for parameters
- * @returns Risk score between 0 and 1
  */
 export function calculateRiskScore(
   parameters: RiskParameters,
@@ -25,32 +21,54 @@ export function calculateRiskScore(
   let totalScore = 0;
   let totalWeight = 0;
 
+  // Debug logging
+  console.log('Calculating risk score with:');
+  console.log('Parameters:', parameters);
+  console.log('Base Score:', baseScore);
+  console.log('Weights:', weights);
+
   // Calculate weighted sum
   for (const [param, weight] of Object.entries(weights)) {
     const paramKey = param as keyof RiskParameters;
     const value = parameters[paramKey];
     
+    // Debug logging for each parameter
+    console.log(`\nProcessing ${paramKey}:`);
+    console.log(`Value: ${value}`);
+    console.log(`Weight: ${weight}`);
+    
+    let contribution = 0;
     // For healthcare, which is inverted (higher value = lower risk)
     if (paramKey === 'healthcareInfrastructure') {
-      totalScore += weight * (1 - value);
+      contribution = weight * (1 - value);
+      console.log(`Healthcare contribution (inverted): ${contribution}`);
     } else {
-      totalScore += weight * value;
+      contribution = weight * value;
+      console.log(`Regular contribution: ${contribution}`);
     }
     
+    totalScore += contribution;
     totalWeight += weight;
+    
+    console.log(`Running total score: ${totalScore}`);
   }
 
   // Normalize by total weight
   let riskScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+  console.log(`\nNormalized risk score: ${riskScore}`);
   
   // Apply base score influence if provided
   if (baseScore !== undefined) {
-    // Blend the calculated score with the base score (70% calculated, 30% base)
+    const oldScore = riskScore;
     riskScore = (riskScore * 0.7) + (baseScore * 0.3);
+    console.log(`Applied base score influence: ${oldScore} -> ${riskScore}`);
   }
   
   // Ensure score is within [0, 1] range
-  return Math.max(0, Math.min(1, riskScore));
+  riskScore = Math.max(0, Math.min(1, riskScore));
+  console.log(`Final risk score: ${riskScore}`);
+  
+  return riskScore;
 }
 
 /**
@@ -62,12 +80,27 @@ export function generateRiskProjection(
   seasonalEvents: SeasonalEvent[],
   activeInterventions: ActiveIntervention[]
 ): RiskProjection {
+  // Use the same weights for both calculations
+  const weights = DEFAULT_WEIGHTS;
+  
   // Get the current risk score without interventions
-  const currentRiskScore = calculateRiskScore(currentParameters, baseRiskScore);
+  const currentRiskScore = calculateRiskScore(currentParameters, baseRiskScore, weights);
   
   // Calculate the risk score with interventions
   const interventionParams = applyInterventions(currentParameters, activeInterventions);
-  const interventionRiskScore = calculateRiskScore(interventionParams, baseRiskScore);
+  
+  // Debug logging
+  console.log('Original Parameters:', currentParameters);
+  console.log('Modified Parameters:', interventionParams);
+  console.log('Active Interventions:', activeInterventions);
+  console.log('Using weights:', weights);
+  
+  const interventionRiskScore = calculateRiskScore(interventionParams, baseRiskScore, weights);
+  
+  // Debug logging
+  console.log('Base Risk Score:', baseRiskScore);
+  console.log('Current Risk Score:', currentRiskScore);
+  console.log('Intervention Risk Score:', interventionRiskScore);
   
   // Fill arrays with constant values for simplified display
   const baseRisk = Array(12).fill(currentRiskScore);
@@ -101,20 +134,40 @@ function applyInterventions(
   // Clone parameters to avoid modifying the original
   const modifiedParams = { ...baseParameters };
   
+  // Debug logging before modifications
+  console.log('Parameters before interventions:', { ...modifiedParams });
+  
   // Apply effects from all active interventions
   interventions.forEach(intervention => {
     const paramKey = intervention.impact.parameter;
     const effect = intervention.impact.effect;
+    const oldValue = modifiedParams[paramKey];
     
     // Healthcare infrastructure is inverted (higher is better)
     if (paramKey === 'healthcareInfrastructure') {
-      // For healthcare improvements, positive effect means better infrastructure
-      modifiedParams[paramKey] = Math.max(0, Math.min(1, modifiedParams[paramKey] + Math.abs(effect)));
+      // For healthcare improvements, always add the positive effect
+      const positiveEffect = Math.abs(effect);
+      modifiedParams[paramKey] = Math.max(0, Math.min(1, oldValue + positiveEffect));
+      
+      console.log(`Healthcare improvement: ${oldValue} -> ${modifiedParams[paramKey]}`);
     } else {
-      // For all other parameters, interventions should reduce risk (decrease value)
-      modifiedParams[paramKey] = Math.max(0, Math.min(1, modifiedParams[paramKey] + effect));
+      // For risk reduction, always subtract the absolute effect value
+      const reductionEffect = Math.abs(effect);
+      modifiedParams[paramKey] = Math.max(0, Math.min(1, oldValue - reductionEffect));
+      
+      console.log(`Risk reduction: ${oldValue} -> ${modifiedParams[paramKey]}`);
     }
+    
+    // Debug logging for each intervention
+    console.log(`Applied intervention: ${intervention.name}`);
+    console.log(`Parameter: ${paramKey}`);
+    console.log(`Original value: ${oldValue}`);
+    console.log(`Effect applied: ${effect}`);
+    console.log(`New value: ${modifiedParams[paramKey]}`);
   });
+  
+  // Debug logging after all modifications
+  console.log('Final parameters after all interventions:', modifiedParams);
   
   return modifiedParams;
 }
