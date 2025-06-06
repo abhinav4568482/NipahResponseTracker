@@ -36,7 +36,7 @@ export default function AppHeader() {
                 <p className="text-sm text-gray-600">
                   NORMS is a deterministic spatial tool for modeling and visualizing Nipah virus outbreak risk 
                   across India. The tool considers multiple risk factors based on scientific literature to 
-                  estimate outbreak potential.
+                  estimate outbreak potential. Author:Sumiran Sharma
                 </p>
                 
                 <div className="bg-neutral-50 rounded-md p-4">
