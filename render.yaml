@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: nipah-response-tracker
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: build_and_runtime
+      - key: SESSION_SECRET
+        scope: runtime
+    preDeployCommand: npm run db:push
